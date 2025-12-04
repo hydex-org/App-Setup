@@ -1,5 +1,5 @@
 Steps:
 
 Step #1: 
-chmod +x setup.bash
-./setup.bash
+chmod +x initial-setup.bash
+./initial-setup.bash
