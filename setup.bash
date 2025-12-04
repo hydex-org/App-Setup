@@ -30,5 +30,6 @@ echo "$placeholder_folders" | while read -r folder; do
     fi
 done
 
+
 echo ""
 echo -e "\033[36mCleanup complete!\033[0m"
