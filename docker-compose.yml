@@ -1,181 +1,27 @@
-# Hydex Bridge - Full Stack Docker Compose
-# Per Hydex Spec Section 5.6
-#
-# Services:
-#   - bridge-api: Stateless orchestrator (TypeScript)
-#   - enclave: UFVK scanner + attestation signer (Rust)
-#   - mpc-node-1/2/3: FROST threshold signers (Rust)
+name: CI Pipeline
 
-services:
-  # ============================================
-  # Bridge API - Stateless Orchestrator
-  # ============================================
-  bridge-api:
-    build:
-      context: ./src/hydexAPI
-      dockerfile: Dockerfile
-    ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=development
-      - PORT=3001
-      - SOLANA_RPC_URL=${SOLANA_RPC_URL:-https://api.devnet.solana.com}
-      - SOLANA_PROGRAM_ID=B12pxSGTH8bt8LtVcdbEXf2CPpf2sFJuj7SctsFuvcQc
-      - ENCLAVE_URL=http://enclave:8089
-      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-internal-mpc-key}
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-    volumes:
-      - ./src/hydexAPI/config:/app/config:ro
-      - solana-keys:/app/keys:ro
-    depends_on:
-      enclave:
-        condition: service_healthy
-    networks:
-      - hydex-network
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+on:
+  push:
+    branches: [ "main" ]
 
-  # ============================================
-  # Enclave - UFVK Scanner + Attestation Signer
-  # ============================================
-  enclave:
-    build:
-      context: ./src/enclaveenv
-      dockerfile: Dockerfile
-    ports:
-      - "8089:8089"
-    environment:
-      - RUST_LOG=info
-      - ZCASH_RPC_URL=${ZCASH_RPC_URL:-http://zcashd:18232}
-      - ZCASH_RPC_USER=${ZCASH_RPC_USER:-zcash}
-      - ZCASH_RPC_PASSWORD=${ZCASH_RPC_PASSWORD:-zcash}
-      - BRIDGE_API_URL=http://bridge-api:3001
-      - BRIDGE_API_KEY=${INTERNAL_API_KEY:-internal-mpc-key}
-    volumes:
-      - enclave-data:/data
-    networks:
-      - hydex-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8089/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-  # ============================================
-  # MPC Node 1 - FROST Threshold Signer
-  # ============================================
-  mpc-node1:
-    build:
-      context: ./src
-      dockerfile: bridge-custody/Dockerfile
-    image: bridge-custody:latest
-    container_name: mpc-node1
-    hostname: mpc-node1
-    environment:
-      - RUST_LOG=bridge_custody=info
-      - RUST_BACKTRACE=1
-      - NODE_ID=1
-      - CONFIG_PATH=/config/node1.toml
-    volumes:
-      - ./src/bridge-custody/config/node1.toml:/app/config/node.toml
-      - ./src/bridge-custody/data/node1:/data
-    networks:
-      hydex-network:
-        ipv4_address: 172.28.0.11
-    depends_on:
-      - bridge-api
-      - enclave
-    ports:
-      - "3011:3000"
-      - "8081:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 10s
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Login Dockerhub
+      env:
+        DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
+        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+      run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 
-  # ============================================
-  # MPC Node 2 - FROST Threshold Signer
-  # ============================================
-  mpc-node2:
-    build:
-      context: ./src
-      dockerfile: bridge-custody/Dockerfile
-    image: bridge-custody:latest
-    container_name: mpc-node2
-    hostname: mpc-node2
-    environment:
-      - RUST_LOG=bridge_custody=info
-      - NODE_ID=2
-      - RUST_BACKTRACE=1
-      - CONFIG_PATH=/config/node2.toml
-    volumes:
-      - ./src/bridge-custody/config/node2.toml:/app/config/node.toml
-      - ./src/bridge-custody/data/node2:/data
-    networks:
-      hydex-network:
-        ipv4_address: 172.28.0.12
-    ports:
-      - "3012:3000"
-      - "8082:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 10s
-    depends_on:
-      - mpc-node1
+    - name: Build Docker images
+      run: docker-compose build
 
-  # ============================================
-  # MPC Node 3 - FROST Threshold Signer
-  # ============================================
-  mpc-node3:
-    build:
-      context: ./src
-      dockerfile: bridge-custody/Dockerfile
-    image: bridge-custody:latest
-    container_name: mpc-node3
-    hostname: mpc-node3
-    environment:
-      - RUST_LOG=bridge_custody=info
-      - NODE_ID=3
-      - RUST_BACKTRACE=1
-      - CONFIG_PATH=/config/node3.toml
-    volumes:
-      - ./src/bridge-custody/config/node3.toml:/app/config/node.toml
-      - ./src/bridge-custody/data/node3:/data
-    networks:
-      hydex-network:
-        ipv4_address: 172.28.0.13
-    ports:
-      - "3013:3000"
-      - "8083:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 10s
-    depends_on:
-      - mpc-node1
-      - mpc-node2
-
-networks:
-  hydex-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.28.0.0/24
-
-volumes:
-  enclave-data:
-  solana-keys:
-  mpc-node1-data:
-  mpc-node2-data:
-  mpc-node3-data:
+    - name: Push all images
+      run: |
+        docker push ilurdo2022/hydex-bridge-custody:latest
+        docker push ilurdo2022/hydex-enclave:latest
+        docker push ilurdo2022/hydex-bridge-api:latest
