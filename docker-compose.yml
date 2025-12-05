@@ -133,6 +133,8 @@ services:
       start_period: 10s
     depends_on:
       - mpc-node1
+      - bridge-api
+      - enclave
 
   # ============================================
   # MPC Node 3 - FROST Threshold Signer
@@ -167,6 +169,8 @@ services:
     depends_on:
       - mpc-node1
       - mpc-node2
+      - bridge-api
+      - enclave
 
 networks:
   hydex-network:
