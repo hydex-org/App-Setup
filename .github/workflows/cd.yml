@@ -22,9 +22,10 @@ jobs:
 
     - name: Setup config directories
       run: |
+        sudo rm -rf App-Setup # Remove existing App-Setup folder
         git clone https://github.com/hydex-org/App-Setup.git
         ./App-Setup/initial-setup.bash
-        cd App-Setup
+        ls -a
 
     - name: Stop existing containers
       run: sudo docker compose -f docker-compose.yml down --remove-orphans || true
