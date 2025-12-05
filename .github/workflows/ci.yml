@@ -19,6 +19,6 @@ jobs:
       run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       
     - name: Build the Docker image
-      run: docker build -t ilurdo2022/hydex-cicd-pipeline .
+      run: docker-compose up -t ilurdo2022/hydex-cicd-pipeline .
     - name: Push to Dockerhub
-      run: docker push varsubham/cicd-pipeline:latest
+      run: docker push ilurdo2022/cicd-pipeline:latest
