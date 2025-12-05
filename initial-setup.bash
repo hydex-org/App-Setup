@@ -46,7 +46,7 @@ repos=(
     "git@github.com:hydex-org/hydexAPI.git"
 )
 
-cd "$SRC_PATH"
+#cd "$SRC_PATH"
 
 for repo in "${repos[@]}"; do
     repo_name=$(basename "$repo" .git)
