@@ -62,19 +62,19 @@ for repo in "${repos[@]}"; do
     fi
 done
 
-# Checkout DevToProd branch for each repository
+# Checkout main branch for each repository
 echo ""
-echo -e "\033[36mChecking out DevToProd branch...\033[0m"
+echo -e "\033[36mChecking out main branch...\033[0m"
 
 for repo in "${repos[@]}"; do
     repo_name=$(basename "$repo" .git)
     if [ -d "$repo_name" ]; then
         cd "$SRC_PATH/$repo_name"
-        echo -e "Switching \033[90m$repo_name\033[0m to DevToProd..."
-        if git checkout DevToProd 2>/dev/null; then
-            echo -e "\033[32mChecked out DevToProd: $repo_name\033[0m"
+        echo -e "Switching \033[90m$repo_name\033[0m to main..."
+        if git checkout main 2>/dev/null; then
+            echo -e "\033[32mChecked out main: $repo_name\033[0m"
         else
-            echo -e "\033[31mFailed to checkout DevToProd: $repo_name (branch may not exist)\033[0m"
+            echo -e "\033[31mFailed to checkout main: $repo_name (branch may not exist)\033[0m"
         fi
         cd "$SRC_PATH"
     fi
