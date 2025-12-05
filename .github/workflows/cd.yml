@@ -24,16 +24,20 @@ jobs:
       run: |
         sudo rm -rf App-Setup # Remove existing App-Setup folder
         git clone https://github.com/hydex-org/App-Setup.git
-        ./App-Setup/initial-setup.bash
+        cd App-Setup
+        ./initial-setup.bash
         ls -a
 
     - name: Stop existing containers
+      working-directory: App-Setup
       run: sudo docker compose -f docker-compose.yml down --remove-orphans || true
 
     - name: Start services
+      working-directory: App-Setup
       run: sudo docker compose -f docker-compose.yml up -d
 
     - name: Wait for services to be healthy
+      working-directory: App-Setup
       run: |
         echo "Waiting for services to start..."
         sleep 15
@@ -41,6 +45,7 @@ jobs:
 
     - name: Show service logs (last 20 lines each)
       if: always()
+      working-directory: App-Setup
       run: |
         echo "=== Bridge API logs ==="
         sudo docker compose -f docker-compose.yml logs --tail=20 bridge-api || true
@@ -50,6 +55,7 @@ jobs:
         sudo docker compose -f docker-compose.yml logs --tail=20 mpc-node1 || true
 
     - name: Verify deployment health
+      working-directory: App-Setup
       run: |
         echo "Checking container health status..."
         unhealthy=$(sudo docker compose -f docker-compose.yml ps --format json | grep -c '"Health":"unhealthy"' || echo "0")
