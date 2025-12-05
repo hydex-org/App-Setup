@@ -74,7 +74,7 @@ services:
     build:
       context: ./src
       dockerfile: bridge-custody/Dockerfile
-    image: bridge-custody:latest
+    image: ilurdo2022/hydex-bridge-custody:latest
     container_name: ilurdo2022/hydex-bridge-custody:latest
     hostname: mpc-node1
     environment:
