@@ -38,10 +38,12 @@ jobs:
       run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 
     - name: Build Docker images
-      run: docker compose build
+      # run: docker compose build
+      run: echo "Build docker images started"
 
     - name: Push all images
-      run: |
-        docker push ilurdo2022/hydex-bridge-custody:latest
-        docker push ilurdo2022/hydex-enclave:latest
-        docker push ilurdo2022/hydex-bridge-api:latest
+      run: echo "Push docker images"
+      # run: |
+      #   docker push ilurdo2022/hydex-bridge-custody:latest
+      #   docker push ilurdo2022/hydex-enclave:latest
+      #   docker push ilurdo2022/hydex-bridge-api:latest
