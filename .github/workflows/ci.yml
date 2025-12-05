@@ -5,20 +5,34 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
+    
     - name: Login Dockerhub
       env:
         DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
         DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
       run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-      
-    - name: Build the Docker image
-      run: docker-compose up -t ilurdo2022/hydex-cicd-pipeline .
-    - name: Push to Dockerhub
-      run: docker push ilurdo2022/cicd-pipeline:latest
+
+    # Build all images with docker-compose
+    - name: Build Docker images
+      run: docker-compose build
+
+    # Tag and push each image
+    - name: Tag and Push bridge-custody
+      run: |
+        docker tag bridge-custody:latest ilurdo2022/hydex-bridge-custody:latest
+        docker push ilurdo2022/hydex-bridge-custody:latest
+
+    - name: Tag and Push enclave
+      run: |
+        docker tag app-setup-enclave:latest ilurdo2022/hydex-enclave:latest
+        docker push ilurdo2022/hydex-enclave:latest
+
+    - name: Tag and Push bridge-api
+      run: |
+        docker tag app-setup-bridge-api:latest ilurdo2022/hydex-bridge-api:latest
+        docker push ilurdo2022/hydex-bridge-api:latest
