@@ -16,17 +16,48 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Pull Docker images
+    - name: Login to Docker Hub
       run: |
-        sudo docker pull ilurdo2022/hydex-bridge-custody:latest
-        sudo docker pull ilurdo2022/hydex-enclave:latest
-        sudo docker pull ilurdo2022/hydex-bridge-api:latest
+        echo "${{ secrets.DOCKER_PASSWORD }}" | sudo docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Setup config directories
+      run: |
+        mkdir -p config/bridge-custody
+        mkdir -p config/hydexAPI
+        # Copy config files from repo to expected locations
+        cp src/bridge-custody/config/node1.toml config/bridge-custody/
+        cp src/bridge-custody/config/node2.toml config/bridge-custody/
+        cp src/bridge-custody/config/node3.toml config/bridge-custody/
 
     - name: Stop existing containers
-      run: sudo docker compose down || true
+      run: sudo docker compose -f docker-compose.prod.yml down --remove-orphans || true
 
     - name: Start services
-      run: sudo docker compose up -d
+      run: sudo docker compose -f docker-compose.prod.yml up -d
 
-    - name: Show running containers
-      run: sudo docker ps
+    - name: Wait for services to be healthy
+      run: |
+        echo "Waiting for services to start..."
+        sleep 15
+        sudo docker compose -f docker-compose.prod.yml ps
+
+    - name: Show service logs (last 20 lines each)
+      if: always()
+      run: |
+        echo "=== Bridge API logs ==="
+        sudo docker compose -f docker-compose.prod.yml logs --tail=20 bridge-api || true
+        echo "=== Enclave logs ==="
+        sudo docker compose -f docker-compose.prod.yml logs --tail=20 enclave || true
+        echo "=== MPC Node 1 logs ==="
+        sudo docker compose -f docker-compose.prod.yml logs --tail=20 mpc-node1 || true
+
+    - name: Verify deployment health
+      run: |
+        echo "Checking container health status..."
+        unhealthy=$(sudo docker compose -f docker-compose.prod.yml ps --format json | grep -c '"Health":"unhealthy"' || echo "0")
+        if [ "$unhealthy" -gt 0 ]; then
+          echo "WARNING: Some containers are unhealthy"
+          sudo docker compose -f docker-compose.prod.yml ps
+          exit 1
+        fi
+        echo "All containers are healthy!"

@@ -75,7 +75,7 @@ services:
       context: ./src
       dockerfile: bridge-custody/Dockerfile
     image: ilurdo2022/hydex-bridge-custody:latest
-    container_name: ilurdo2022/hydex-bridge-custody:latest
+    container_name: mpc-node1
     hostname: mpc-node1
     environment:
       - RUST_LOG=bridge_custody=info
